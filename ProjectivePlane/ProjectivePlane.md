@@ -2,7 +2,7 @@
 
 # Simple ratio and cross ratio
 
-# The duality principle of points and lines
-
 # Transformation Group: $SL(3,\mathbb{R})/v\sim -v$
+
+# The duality principle of points and lines
 
