@@ -1,9 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/4266129954_1706866479_3580164276.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/1442284246_3659370035_2262089812.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/1442284246_2328463322_303698318.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/1442284246_1725536460_356752442.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/1442284246_2606781005_3754293518.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/1442284246_795394310_104574546.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/1442284246_3324051445_2913805562.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/PtLnDstOfPlane/1442284246_2292429055_2318289978.mp4'

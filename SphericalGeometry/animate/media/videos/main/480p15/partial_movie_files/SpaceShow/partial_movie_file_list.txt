@@ -1,5 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/SpaceShow/3719877083_465989991_223132457.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/SpaceShow/3447075755_3615608605_3121800288.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/SpaceShow/3447075755_456424881_710457376.mp4'
-file 'file:C:/Users/loveandjustice/Desktop/Project_PopularGeometry/SphericalGeometry/animate/media/videos/main/480p15/partial_movie_files/SpaceShow/3447075755_2562600914_1395213479.mp4'
