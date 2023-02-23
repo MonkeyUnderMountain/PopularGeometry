@@ -1,3 +1,4 @@
+import manimlib.utils.space_ops
 from manimlib import *
 import numpy as np
 
@@ -20,8 +21,204 @@ def prod_quaternion(q, p):
 
 
 # 将球坐标转换为numpy坐标数组
-def sph_to_coord(theta, phi):
-    return 3*np.array([np.cos(theta)*np.sin(phi), np.sin(theta)*np.sin(phi), np.cos(phi)])
+def sph_to_coord(r, theta, phi):
+    return r*np.array([np.cos(theta)*np.sin(phi), np.sin(theta)*np.sin(phi), np.cos(phi)])
+
+
+# 由两个点生成球面直线
+def sphere_line(pa, pb):
+    normal = manimlib.utils.space_ops.cross(pa, pb)
+    axis = manimlib.utils.space_ops.cross(np.array(normal), np.array([0, 0, 1]))
+    r = np.sqrt((pa ** 2).sum())
+    if axis == [0, 0, 0]:
+        rotate = np.eye(3)
+    else:
+        rotate = manimlib.utils.space_ops.z_to_vector(np.array(normal))
+    line = ParametricCurve(
+        lambda t: np.matmul(rotate, sph_to_coord(r, t, PI/2)),
+        t_range=[0, 2*PI]
+    )
+    return line
+
+
+# 连接两点球面线段
+def sphere_segment(pa, pb):
+    normal = manimlib.utils.space_ops.cross(pa, pb)
+    axis = manimlib.utils.space_ops.cross(np.array(normal), np.array([0, 0, 1]))
+    if axis == [0, 0, 0]:
+        rotate = np.eye(3)
+    else:
+        rotate = manimlib.utils.space_ops.z_to_vector(np.array(normal))
+    r = np.sqrt((pa**2).sum())
+    # 将输入的两点转至赤道后转为复数求得幅角， 作为t的范围
+    z_a = manimlib.utils.space_ops.R3_to_complex(np.matmul(np.linalg.inv(rotate), pa)/r)
+    z_b = manimlib.utils.space_ops.R3_to_complex(np.matmul(np.linalg.inv(rotate), pb)/r)
+    # noinspection PyTypeChecker
+    d_angle = np.angle(z_b/z_a)
+    if d_angle > PI:
+        d_angle = 2*PI - d_angle
+        # noinspection PyTypeChecker
+        b_angle = np.angle(z_b)
+    else:
+        # noinspection PyTypeChecker
+        b_angle = np.angle(z_a)
+    segment = ParametricCurve(
+        lambda t: np.matmul(rotate, sph_to_coord(r, t, PI / 2)),
+        t_range=[b_angle, b_angle+d_angle]
+    )
+    return segment
+
+
+# 球面上连接两点的球小圆的劣弧
+def sphere_small_circle(pa, pb, pc):
+    normal = manimlib.utils.space_ops.cross(pa - pc, pb - pc)
+    axis = manimlib.utils.space_ops.cross(np.array(normal), np.array([0, 0, 1]))
+    if axis == [0, 0, 0]:
+        rotate = np.eye(3)
+    else:
+        rotate = manimlib.utils.space_ops.z_to_vector(np.array(normal))
+    ra = np.matmul(np.linalg.inv(rotate), pa)
+    rb = np.matmul(np.linalg.inv(rotate), pb)
+    r = np.sqrt((pa ** 2).sum())
+    phi = np.arccos(ra[2]/r)
+
+    # 将输入的两点转至纬线后转为复数求得幅角， 作为t的范围
+    z_a = manimlib.utils.space_ops.R3_to_complex(ra)
+    z_b = manimlib.utils.space_ops.R3_to_complex(rb)
+    # noinspection PyTypeChecker
+    d_angle = np.angle(z_b / z_a)
+    if d_angle > PI:
+        d_angle = 2 * PI - d_angle
+        # noinspection PyTypeChecker
+        b_angle = np.angle(z_b)
+    else:
+        # noinspection PyTypeChecker
+        b_angle = np.angle(z_a)
+
+    segment = ParametricCurve(
+        lambda t: np.matmul(rotate, sph_to_coord(r, t, phi)),
+        t_range=[b_angle, b_angle+d_angle]
+    )
+    return segment
+
+
+# 球面上的月形, 以a为一个顶点, a_b, a_c为月形的两边
+def moon_shape(pa, pb, pc):
+    if manimlib.utils.space_ops.cross(np.array(pa), np.array([0, 0, 1])) == [0, 0, 0]:
+        rotate = np.eye(3)
+    else:
+        rotate = manimlib.utils.space_ops.z_to_vector(pa)
+    rb = np.matmul(np.linalg.inv(rotate), pb)
+    rc = np.matmul(np.linalg.inv(rotate), pc)
+    r = np.sqrt((pa ** 2).sum())
+
+    # 将输入的两点转至纬线后转为复数求得幅角， 作为theta的范围
+    z_b = manimlib.utils.space_ops.R3_to_complex(rb)
+    z_c = manimlib.utils.space_ops.R3_to_complex(rc)
+    # noinspection PyTypeChecker
+    d_theta = np.angle(z_c / z_b)
+    if d_theta > PI:
+        d_theta = 2 * PI - d_theta
+        # noinspection PyTypeChecker
+        b_theta = np.angle(z_c)
+    else:
+        # noinspection PyTypeChecker
+        b_theta = np.angle(z_b)
+
+    moon = ParametricSurface(
+        lambda u, v: np.matmul(rotate, sph_to_coord(r, u, v)),
+        u_range=(b_theta, b_theta+d_theta),
+        v_range=(0, PI)
+    )
+    return moon
+
+
+# 数学对象:球面三角形
+class SphereTriangle(Group):
+    def __init__(self, pa: np.array, pb: np.array, pc: np.array):
+        self.pa = pa
+        self.pb = pb
+        self.pc = pc
+        self.surf = None
+        self.sigment_a = sphere_segment(pb, pc)
+        self.sigment_b = sphere_segment(pc, pa)
+        self.sigment_c = sphere_segment(pa, pb)
+        Group.__init__(self, self.sigment_a, self.sigment_b, self.sigment_c)
+
+    # 显示顶点
+    def add_vertex(self):
+        self.add(Dot(self.pa))
+        self.add(Dot(self.pb))
+        self.add(Dot(self.pc))
+
+    # 显示三角内部的曲面
+    def add_surf(self):
+        # 判断一个点是否在给定三点构成的以pa为顶点的月形中
+        if manimlib.utils.space_ops.cross(np.array(self.pa), np.array([0, 0, 1])) == [0, 0, 0]:
+            rotate1 = np.eye(3)
+        else:
+            rotate1 = manimlib.utils.space_ops.z_to_vector(self.pa)
+        rb1 = np.matmul(np.linalg.inv(rotate1), self.pb)
+        rc1 = np.matmul(np.linalg.inv(rotate1), self.pc)
+        z_b1 = manimlib.utils.space_ops.R3_to_complex(rb1)
+        z_c1 = manimlib.utils.space_ops.R3_to_complex(rc1)
+        # noinspection PyTypeChecker
+        d_theta1 = np.angle(z_c1 / z_b1)
+        if d_theta1 > PI:
+            d_theta1 = 2 * PI - d_theta1
+            # noinspection PyTypeChecker
+            b_theta1 = np.angle(z_c1)
+        else:
+            # noinspection PyTypeChecker
+            b_theta1 = np.angle(z_b1)
+
+        def in_moon(pd):
+            rd = np.matmul(np.linalg.inv(rotate1), pd)
+            # 将输入的两点转至纬线后转为复数求得幅角， 作为theta的范围
+            z_d = manimlib.utils.space_ops.R3_to_complex(rd)
+            # noinspection PyTypeChecker
+            theta = np.angle(z_d)
+            if b_theta1 <= theta <= d_theta1+b_theta1:
+                return True
+            else:
+                return False
+
+        # 在以pb为顶点的月形上改动
+        if manimlib.utils.space_ops.cross(np.array(self.pb), np.array([0, 0, 1])) == [0, 0, 0]:
+            rotate = np.eye(3)
+        else:
+            rotate = manimlib.utils.space_ops.z_to_vector(self.pb)
+        rb = np.matmul(np.linalg.inv(rotate), self.pa)
+        rc = np.matmul(np.linalg.inv(rotate), self.pc)
+        r = np.sqrt((self.pb ** 2).sum())
+
+        # 将输入的两点转至纬线后转为复数求得幅角， 作为theta的范围
+        z_b = manimlib.utils.space_ops.R3_to_complex(rb)
+        z_c = manimlib.utils.space_ops.R3_to_complex(rc)
+        # noinspection PyTypeChecker
+        d_theta = np.angle(z_c / z_b)
+        if d_theta > PI:
+            d_theta = 2 * PI - d_theta
+            # noinspection PyTypeChecker
+            b_theta = np.angle(z_c)
+        else:
+            # noinspection PyTypeChecker
+            b_theta = np.angle(z_b)
+
+        def func_triangle(u: float, v: float):
+            pt = np.matmul(rotate, sph_to_coord(r, u, v))
+            if in_moon(pt):
+                return pt
+            else:
+                return None
+
+        triangle = ParametricSurface(
+            func_triangle,
+            u_range=(b_theta, b_theta+d_theta),
+            v_range=(0, PI)
+        )
+        self.surf = triangle
+        self.add(self.surf)
 
 
 # 开篇展示平面，空间和球面
@@ -179,6 +376,7 @@ class Apply(Scene):
 
 class ConstructionOfSphere(Scene):
     def construct(self):
+        # 平面上的部分
         plane_grid = NumberPlane()
         plane_axis = Axes(
             axis_config={
@@ -208,21 +406,29 @@ class ConstructionOfSphere(Scene):
         self.play(ShowCreation(brace))
         self.wait()
 
+        # 球面上的部分
         sphere = Sphere(
             radius=3,
             color=BLUE_E,
-            opacity=0.8,
+            opacity=0.5,
         )
         sphere_mesh = SurfaceMesh(sphere)
 
-        sphere_point_a = Dot(point=sph_to_coord(PI / 8-PI/2, PI / 6), color=RED)
-        sphere_point_b = Dot(point=sph_to_coord(-PI / 8-PI/2, PI / 6), color=RED)
-
-        arc1 = ParametricCurve(
-            lambda t: sph_to_coord(t, PI/6),
-            color=YELLOW,
-            t_range=np.array([-PI/2-PI / 8, -PI/2+PI / 8])
-        )
+        npa = sph_to_coord(3, PI / 8-PI/2, 2*PI/3)
+        npb = sph_to_coord(3, -PI / 8-PI/2, PI / 6)
+        sphere_point_a = Dot(point=npa, color=RED)
+        sphere_point_b = Dot(point=npb, color=sphere_point_a.get_color())
+        arc1 = sphere_segment(npb, npa).set_color(YELLOW)
+        arc2 = sphere_small_circle(npb, npa, sph_to_coord(3, PI, PI/2)).set_color(arc1.get_color())
+        arc3 = sphere_small_circle(npa, npb, sph_to_coord(3, -PI/4, PI / 3)).set_color(arc1.get_color())
+        arc4 = sphere_small_circle(npa, npb, sph_to_coord(3, -PI/2-PI/8, PI / 3)).set_color(arc1.get_color())
+        arc5 = sphere_small_circle(npa, npb, sph_to_coord(3, -3*PI/8, PI / 6)).set_color(arc1.get_color())
+        v_arc = VGroup(arc1, arc2, arc3, arc4, arc5)
+        s_line1 = sphere_line(npb, npa).set_color(YELLOW_E)
+        s_line2 = sphere_line(np.array([0, 0, 3]), npa).set_color(s_line1.get_color())
+        s_line3 = sphere_line(np.array([0, 0, 3]), npb).set_color(s_line1.get_color())
+        s_line4 = sphere_line(sph_to_coord(3, -PI/4, PI/2), np.array([0, 3, 0])).set_color(s_line1.get_color())
+        s_line5 = sphere_line(npb, sph_to_coord(3, -PI/4, -PI/4)).set_color(s_line1.get_color())
 
         camera = self.camera.frame
         quaternion1 = axis_theta_to_quaternion([1, 0, 0], PI / 2)
@@ -246,13 +452,117 @@ class ConstructionOfSphere(Scene):
             FadeOut(point),
             FadeOut(plane_axis)
         )
+
+        # 制作时作参考
+        axes = ThreeDAxes(
+            axis_config={
+                'include_tip': True
+            }
+        )
+        self.add(axes)
+
         self.play(
             camera.animate.set_orientation(Rotation(quaternion_a)),
             ReplacementTransform(plane_grid, sphere_mesh),
             ShowCreation(sphere)
         )
-        # self.play(FadeOut(sphere_mesh))
-        self.play(ShowCreation(sphere_point_a), ShowCreation(sphere_point_b))
+
+        self.play(
+            ShowCreation(sphere_point_a),
+            ShowCreation(sphere_point_b)
+        )
         self.wait()
         self.play(ShowCreation(arc1))
+        self.play(ShowCreation(arc2))
+        self.play(ShowCreation(arc3))
+        self.play(ShowCreation(arc4))
+        self.play(ShowCreation(arc5))
+        self.add(sphere_point_a, sphere_point_b)
+        self.play(ShowCreation(s_line1))
+        self.add(sphere_point_a, sphere_point_b)
+        self.wait()
+        self.play(
+            FadeOut(v_arc),
+            FadeOut(sphere_point_a),
+            FadeOut(sphere_point_b)
+        )
+        self.wait()
+        self.play(FadeOut(s_line1))
+        self.play(ShowCreation(s_line2))
+        self.play(FadeOut(s_line2))
+        self.play(ShowCreation(s_line3))
+        self.wait()
+        self.play(ShowCreation(s_line1))
+        self.play(FadeOut(s_line1))
+        self.play(ShowCreation(s_line4))
+        self.play(FadeOut(s_line4))
+        self.play(ShowCreation(s_line5))
+        self.wait()
+
+        self.play(
+            FadeOut(sphere_mesh),
+            FadeOut(sphere),
+            FadeOut(s_line5),
+            FadeOut(s_line3)
+        )
+        self.wait()
+
+
+class DefinitionOfLast(Scene):
+    def construct(self):
+        definition_line = TexText(
+            r'称$l$为球面直线, 若$l$是球面的一个大圆.',
+            tex_to_color_map={'球面直线': YELLOW}
+        ).shift(UP)
+        definition_dist1 = TexText(
+            r'球面上两点$A,B$间的球面距离$d_{S}(A, B)$',
+            tex_to_color_map={"球面距离": YELLOW}
+        ).next_to(definition_line, direction=DOWN).shift(DOWN)
+        definition_dist2 = TexText(
+            r'定义为过$A,B$的球大圆的劣弧弧长.'
+        ).next_to(definition_dist1, direction=DOWN)
+        definition_dist = VGroup(definition_dist1, definition_dist2)
+
+        self.play(ShowCreation(definition_line), run_time=3)
+        self.play(ShowCreation(definition_dist), run_time=4)
+        self.wait()
+
+
+class TriangleOnSphere(Scene):
+    def construct(self):
+        sphere = Sphere(
+            radius=3,
+            color=BLUE,
+            opacity=0.8
+        )
+
+        npa = sph_to_coord(3, PI, 0)
+        npb = sph_to_coord(3, -PI/2, PI/2)
+        npc = sph_to_coord(3, PI/6-PI/2, PI/2)
+        '''
+        triangle = SphereTriangle(npa, npb, npc)
+        triangle.add_vertex()
+        triangle.add_surf()
+        triangle.surf.set_color(RED_A)
+        '''
+
+        moon = moon_shape(npa, npb, npc)
+
+        camera = self.camera.frame
+        quaternion1 = axis_theta_to_quaternion([1, 0, 0], PI / 2)
+        quaternion2 = axis_theta_to_quaternion([0.5, 1, 0], -PI / 8)
+        quaternion3 = axis_theta_to_quaternion([0, 0, 1], PI / 2)
+        quaternion4 = axis_theta_to_quaternion([0, 1, 0], -PI / 4)
+        quaternion5 = axis_theta_to_quaternion([0, 0, 1], -PI / 2)
+        quaternion_a = prod_quaternion(quaternion2, quaternion1)
+        quaternion_a = prod_quaternion(quaternion3, quaternion_a)
+        quaternion_a = prod_quaternion(quaternion4, quaternion_a)
+        quaternion_a = prod_quaternion(quaternion5, quaternion_a)
+        light = self.camera.light_source
+        light.move_to(np.array([0, 0, 10]))
+        camera.set_orientation(Rotation(quaternion_a)),
+
+        self.play(ShowCreation(sphere))
+        # self.play(ShowCreation(triangle))
+        self.play(ShowCreation(moon))
         self.wait()
