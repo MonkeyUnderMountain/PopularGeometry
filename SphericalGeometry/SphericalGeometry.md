@@ -101,4 +101,4 @@ $$S_{\triangle ABC} = \angle A + \angle B + \angle C - \pi . $$
 -[1] [Wikipedia](https://en.wikipedia.org/wiki/Spherical_geometry)
 
 <div id="人教社"></div>
--[2] [普通高中课程标准实验教科书 数学 选修3-3 B版 球面上的几何]
+-[2] 普通高中课程标准实验教科书 数学 选修3-3 B版 球面上的几何

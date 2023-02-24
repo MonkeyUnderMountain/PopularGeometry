@@ -191,6 +191,8 @@ class SphereTriangle(Group):
         rb = np.matmul(np.linalg.inv(rotate), self.pa)
         rc = np.matmul(np.linalg.inv(rotate), self.pc)
         r = np.sqrt((self.pb ** 2).sum())
+        h = min(rb[2], rc[2])
+        phi = np.arccos(h/r)
 
         # 将输入的两点转至纬线后转为复数求得幅角， 作为theta的范围
         z_b = manimlib.utils.space_ops.R3_to_complex(rb)
@@ -215,7 +217,7 @@ class SphereTriangle(Group):
         triangle = ParametricSurface(
             func_triangle,
             u_range=(b_theta, b_theta+d_theta),
-            v_range=(0, PI)
+            v_range=(0, phi)
         )
         self.surf = triangle
         self.add(self.surf)
@@ -539,12 +541,11 @@ class TriangleOnSphere(Scene):
         npa = sph_to_coord(3, PI, 0)
         npb = sph_to_coord(3, -PI/2, PI/2)
         npc = sph_to_coord(3, PI/6-PI/2, PI/2)
-        '''
+
         triangle = SphereTriangle(npa, npb, npc)
         triangle.add_vertex()
         triangle.add_surf()
         triangle.surf.set_color(RED_A)
-        '''
 
         moon = moon_shape(npa, npb, npc)
 
@@ -563,6 +564,6 @@ class TriangleOnSphere(Scene):
         camera.set_orientation(Rotation(quaternion_a)),
 
         self.play(ShowCreation(sphere))
-        # self.play(ShowCreation(triangle))
-        self.play(ShowCreation(moon))
+        self.play(ShowCreation(triangle))
+        # self.play(ShowCreation(moon))
         self.wait()
